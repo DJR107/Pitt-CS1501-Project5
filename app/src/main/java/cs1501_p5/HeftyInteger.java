@@ -5,6 +5,7 @@
 package cs1501_p5;
 
 import java.util.Random;
+import java.math.BigInteger;
 
 public class HeftyInteger {
 
@@ -16,7 +17,8 @@ public class HeftyInteger {
 	 * Construct the HeftyInteger from a given byte array
 	 * @param b the byte array that this HeftyInteger should represent
 	 */
-	public HeftyInteger(byte[] b) {
+	public HeftyInteger(byte[] b) 
+	{
 		val = b;
 	}
 
@@ -24,7 +26,8 @@ public class HeftyInteger {
 	 * Return this HeftyInteger's val
 	 * @return val
 	 */
-	public byte[] getVal() {
+	public byte[] getVal() 
+	{
 		return val;
 	}
 
@@ -32,7 +35,8 @@ public class HeftyInteger {
 	 * Return the number of bytes in val
 	 * @return length of the val byte array
 	 */
-	public int length() {
+	public int length() 
+	{
 		return val.length;
 	}
 
@@ -40,7 +44,8 @@ public class HeftyInteger {
 	 * Add a new byte as the most significant in this
 	 * @param extension the byte to place as most significant
 	 */
-	public void extend(byte extension) {
+	public void extend(byte extension) 
+	{
 		byte[] newv = new byte[val.length + 1];
 		newv[0] = extension;
 		for (int i = 0; i < val.length; i++) {
@@ -54,7 +59,8 @@ public class HeftyInteger {
 	 * significant byte will be a negative signed number
 	 * @return true if this is negative, false if positive
 	 */
-	public boolean isNegative() {
+	public boolean isNegative() 
+	{
 		return (val[0] < 0);
 	}
 
@@ -62,7 +68,8 @@ public class HeftyInteger {
 	 * Computes the sum of this and other
 	 * @param other the other HeftyInteger to sum with this
 	 */
-	public HeftyInteger add(HeftyInteger other) {
+	public HeftyInteger add(HeftyInteger other) 
+	{
 		byte[] a, b;
 		// If operands are of different sizes, put larger first ...
 		if (val.length < other.length()) {
@@ -137,7 +144,8 @@ public class HeftyInteger {
 	 * Negate val using two's complement representation
 	 * @return negation of this
 	 */
-	public HeftyInteger negate() {
+	public HeftyInteger negate() 
+	{
 		byte[] neg = new byte[val.length];
 		int offset = 0;
 
@@ -176,7 +184,8 @@ public class HeftyInteger {
 	 * @param other HeftyInteger to subtract from this
 	 * @return difference of this and other
 	 */
-	public HeftyInteger subtract(HeftyInteger other) {
+	public HeftyInteger subtract(HeftyInteger other) 
+	{
 		return this.add(other.negate());
 	}
 
@@ -185,9 +194,184 @@ public class HeftyInteger {
 	 * @param other HeftyInteger to multiply by this
 	 * @return product of this and other
 	 */
-	public HeftyInteger multiply(HeftyInteger other) {
-		// YOUR CODE HERE (replace the return, too...)
-		return null;
+	public HeftyInteger multiply(HeftyInteger other) 
+	{
+		return recMultHelp(val, other.getVal());
+	}
+
+	private HeftyInteger recMultHelp(byte[] x, byte[] y)
+	{
+		byte[] a, b;
+		// If operands are of different sizes, put larger first ...
+		if (x.length < y.length) {
+			a = y;
+			b = x;
+		}
+		else {
+			a = x;
+			b = y;
+		}
+
+		// ... and normalize size for convenience
+		if (b.length < a.length) {
+			int diff = a.length - b.length;
+
+			byte pad = (byte) 0;
+			if (b[0] < 0) {
+				pad = (byte) 0xFF;
+			}
+
+			byte[] newb = new byte[a.length];
+			for (int i = 0; i < diff; i++) {
+				newb[i] = pad;
+			}
+
+			for (int i = 0; i < b.length; i++) {
+				newb[i + diff] = b[i];
+			}
+
+			b = newb;
+		}
+
+		//System.out.println("a length = "+a.length);
+		//System.out.println("b length = "+b.length);
+
+		if (a.length == 1)
+		{
+			return multiply(a[0], b[0]);
+		}
+		else
+		{
+			// make a and b even number of bytes by extending each
+			if (a.length % 2 == 1)
+			{
+				byte[] newA = new byte[a.length+1];
+				newA[0] = (byte) 0;
+				for (int i=0; i<a.length; i++) 
+				{
+					newA[i+1] = a[i];
+				}
+				a = newA;
+
+				byte[] newB = new byte[b.length+1];
+				newB[0] = (byte) 0;
+				for (int i=0; i<b.length; i++) 
+				{
+					newB[i+1] = b[i];
+				}
+				b = newB;
+			}
+
+			byte[] xH = new byte[a.length/2];
+			byte[] xL = new byte[a.length/2];
+
+			byte[] yH = new byte[b.length/2];
+			byte[] yL = new byte[b.length/2];
+
+			for (int i=0; i<a.length; i++)
+			{
+				if (i < xH.length)
+					xH[i] = a[i];
+				else
+					xL[i-xH.length] = a[i];
+			}
+
+			for (int i=0; i<b.length; i++)
+			{
+				if (i < yH.length)
+					yH[i] = b[i];
+				else
+					yL[i-yH.length] = b[i];
+			}
+			//System.out.println("xH length = "+xH.length);
+			//System.out.println("xL length = "+xL.length);
+			//System.out.println("yH length = "+yH.length);
+			//System.out.println("yL length = "+yL.length);
+			//System.out.println();
+
+			/*
+			System.out.print("xH: ");
+			for (int i=0; i<xH.length; i++)
+	 		{
+	 			System.out.print(xH[i]+" ");
+	 		}
+	 		System.out.println();
+	 		System.out.print("xL: ");
+			for (int i=0; i<xL.length; i++)
+	 		{
+	 			System.out.print(xL[i]+" ");
+	 		}
+	 		System.out.println();
+	 		System.out.print("yH: ");
+			for (int i=0; i<yH.length; i++)
+	 		{
+	 			System.out.print(yH[i]+" ");
+	 		}
+	 		System.out.println();
+	 		System.out.print("yL: ");
+			for (int i=0; i<yL.length; i++)
+	 		{
+	 			System.out.print(yL[i]+" ");
+	 		}
+	 		System.out.println();
+	 		*/
+
+			HeftyInteger m1 = recMultHelp(xH, yH);
+			HeftyInteger m2 = recMultHelp(xH, yL);
+			HeftyInteger m3 = recMultHelp(xL, yH);
+			HeftyInteger m4 = recMultHelp(xL, yL);
+
+			HeftyInteger m1shifted = m1.shiftLeft(a.length);
+
+			HeftyInteger m2andm3 = m2.add(m3);
+
+			HeftyInteger m2andm3shifted = m2andm3.shiftLeft(a.length/2);
+
+			HeftyInteger sum = m1shifted.add(m2andm3shifted);
+
+			sum = sum.add(m4);
+
+			return sum;
+		}
+	}
+
+	public HeftyInteger multiply(byte a, byte b)
+	{
+		// Size is 3 because I only use this for the base case of recMultHelp()
+		byte[] newBs = new byte[3];
+
+		int carry = ((int) a & 0xFF) * ((int) b & 0xFF);
+		//System.out.println("Carry = "+carry);
+
+		if (carry > ((1 << 15) - 1))
+			System.out.println("Overflow");
+		else if (carry < (-(1 << 15)))
+			System.out.println("Overflow");
+
+		for (int i=newBs.length-1; i>=0; i--)
+		{
+			newBs[i] = (byte) (carry & 0xFF);
+
+			if (i > 0)
+				carry = carry >>> 8;
+		}
+
+		HeftyInteger newHI = new HeftyInteger(newBs);
+
+		return newHI;
+	}
+
+	// Shift left two for 2^2 (bytes) or one for 2^1 (bytes)
+	public HeftyInteger shiftLeft(int n)
+	{
+		byte[] newBs = new byte[val.length+n];
+
+		for (int i=val.length-1; i>=0; i--)
+		{
+			newBs[i] = val[i];
+		}
+
+		return new HeftyInteger(newBs);
 	}
 
 	/**
@@ -199,8 +383,19 @@ public class HeftyInteger {
 	 *   2:  a valid y value
 	 * such that this * x + other * y == GCD in index 0
 	 */
-	 public HeftyInteger[] XGCD(HeftyInteger other) {
+	 public HeftyInteger[] XGCD(HeftyInteger other) 
+	 {
 		// YOUR CODE HERE (replace the return, too...)
 		return null;
+	 }
+
+	 public void print()
+	 {
+	 	System.out.print("Printed: ");
+	 	for (int i=0; i<val.length; i++)
+	 	{
+	 		System.out.print(val[i]+" ");
+	 	}
+	 	System.out.println();
 	 }
 }
