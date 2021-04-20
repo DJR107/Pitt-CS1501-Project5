@@ -2,14 +2,16 @@
  * HeftyInteger for CS1501 Project 5
  * @author	Dr. Farnan
  */
+
 package cs1501_p5;
 
 import java.util.Random;
-import java.math.BigInteger;
 
 public class HeftyInteger {
 
 	private final byte[] ONE = {(byte) 1};
+
+	private final byte[] ZERO = {(byte) 0};
 
 	private byte[] val;
 
@@ -196,7 +198,23 @@ public class HeftyInteger {
 	 */
 	public HeftyInteger multiply(HeftyInteger other) 
 	{
-		return recMultHelp(val, other.getVal());
+		HeftyInteger newThis = new HeftyInteger(val);
+
+		boolean negate = false;
+		if (newThis.isNegative() ^ other.isNegative())
+			negate = true;
+
+		if (newThis.isNegative())
+			newThis = newThis.negate();
+		if (other.isNegative())
+			other = other.negate();
+
+		HeftyInteger result = recMultHelp(newThis.getVal(), other.getVal());
+
+		if (negate)
+			result = result.negate();
+
+		return result.shrink();
 	}
 
 	private HeftyInteger recMultHelp(byte[] x, byte[] y)
@@ -283,38 +301,6 @@ public class HeftyInteger {
 				else
 					yL[i-yH.length] = b[i];
 			}
-			//System.out.println("xH length = "+xH.length);
-			//System.out.println("xL length = "+xL.length);
-			//System.out.println("yH length = "+yH.length);
-			//System.out.println("yL length = "+yL.length);
-			//System.out.println();
-
-			/*
-			System.out.print("xH: ");
-			for (int i=0; i<xH.length; i++)
-	 		{
-	 			System.out.print(xH[i]+" ");
-	 		}
-	 		System.out.println();
-	 		System.out.print("xL: ");
-			for (int i=0; i<xL.length; i++)
-	 		{
-	 			System.out.print(xL[i]+" ");
-	 		}
-	 		System.out.println();
-	 		System.out.print("yH: ");
-			for (int i=0; i<yH.length; i++)
-	 		{
-	 			System.out.print(yH[i]+" ");
-	 		}
-	 		System.out.println();
-	 		System.out.print("yL: ");
-			for (int i=0; i<yL.length; i++)
-	 		{
-	 			System.out.print(yL[i]+" ");
-	 		}
-	 		System.out.println();
-	 		*/
 
 			HeftyInteger m1 = recMultHelp(xH, yH);
 			HeftyInteger m2 = recMultHelp(xH, yL);
@@ -335,19 +321,23 @@ public class HeftyInteger {
 		}
 	}
 
-	public HeftyInteger multiply(byte a, byte b)
+	private HeftyInteger multiply(byte a, byte b)
 	{
-		// Size is 3 because I only use this for the base case of recMultHelp()
-		byte[] newBs = new byte[3];
+		byte[] newBs = new byte[2];
 
 		int carry = ((int) a & 0xFF) * ((int) b & 0xFF);
-		//System.out.println("Carry = "+carry);
 
 		if (carry > ((1 << 15) - 1))
+		{
 			System.out.println("Overflow");
+			newBs = new byte[3];
+		}
 		else if (carry < (-(1 << 15)))
+		{
 			System.out.println("Overflow");
-
+			newBs = new byte[3];
+		}
+			
 		for (int i=newBs.length-1; i>=0; i--)
 		{
 			newBs[i] = (byte) (carry & 0xFF);
@@ -362,7 +352,7 @@ public class HeftyInteger {
 	}
 
 	// Shift left two for 2^2 (bytes) or one for 2^1 (bytes)
-	public HeftyInteger shiftLeft(int n)
+	private HeftyInteger shiftLeft(int n)
 	{
 		byte[] newBs = new byte[val.length+n];
 
@@ -374,6 +364,30 @@ public class HeftyInteger {
 		return new HeftyInteger(newBs);
 	}
 
+	private HeftyInteger shrink()
+	{
+		int index=0;
+		for (int i=0; i<val.length-1; i++)
+		{
+			index = i;
+			if (val[i] > 0 || val[i] < -1)
+				break;
+			if (val[i] == 0 && val[i+1] < 0)
+				break;
+			if (val[i] == -1 && val[i+1] > 0)
+				break;
+		}
+
+		byte[] newVal = new byte[val.length-index];
+		for (int j=0; j<newVal.length; j++)
+		{
+			newVal[j] = val[index];
+			index++;
+		}
+
+		return new HeftyInteger(newVal);
+	}
+
 	/**
 	 * Run the extended Euclidean algorithm on this and other
 	 * @param other another HeftyInteger
@@ -383,19 +397,184 @@ public class HeftyInteger {
 	 *   2:  a valid y value
 	 * such that this * x + other * y == GCD in index 0
 	 */
-	 public HeftyInteger[] XGCD(HeftyInteger other) 
-	 {
-		// YOUR CODE HERE (replace the return, too...)
-		return null;
-	 }
+	public HeftyInteger[] XGCD(HeftyInteger other) 
+	{
+		HeftyInteger[] arr = new HeftyInteger[3];
 
-	 public void print()
-	 {
-	 	System.out.print("Printed: ");
+		if (this.compareTo(other) < 0)
+		{
+			arr = XGCDrecHelp(other, this, arr);
+			HeftyInteger temp = arr[1];
+			arr[1] = arr[2];
+			arr[2] = temp;
+		}
+		else 
+			arr = XGCDrecHelp(this, other, arr);
+
+		for (int i=0; i<arr.length; i++)
+			arr[i] = arr[i].shrink();
+
+		return arr;
+	}
+
+	private HeftyInteger[] XGCDrecHelp(HeftyInteger a, HeftyInteger b, HeftyInteger[] arr)
+	{
+		HeftyInteger modResult;
+		HeftyInteger iterations;
+
+		if (b.isZero())
+		{
+			arr[0] = a;
+			arr[1] = new HeftyInteger(ONE);
+			arr[2] = new HeftyInteger(ZERO);
+			return arr;
+		}
+		
+		ModMethodReturn modReturn = mod(a, b);
+		iterations = modReturn.numOfIterations;
+		modResult = modReturn.mod;
+		arr = XGCDrecHelp(b, modResult, arr);
+
+		HeftyInteger temp = arr[1];
+		arr[1] = arr[2];
+		arr[2] = temp.add(iterations.multiply(arr[2]).negate());
+
+		//System.out.print("X -> ");
+		//arr[1].print();
+		//System.out.print("Y -> ");
+		//arr[2].print();
+
+		return arr;
+	}
+
+	private ModMethodReturn mod(HeftyInteger x, HeftyInteger y)
+	{
+		//System.out.print("X -> ");
+	 	//x.print();
+	 	//System.out.print("Y -> ");
+	 	//y.print();
+
+	 	HeftyInteger result = new HeftyInteger(x.getVal());
+	 	HeftyInteger i = new HeftyInteger(ZERO);
+	 	while (result.compareTo(y) >= 0)
+	 	{
+	 		result = result.add(y.negate());
+	 		i = i.add(new HeftyInteger(ONE));
+	 	}
+	 	//System.out.print("iterations -> ");
+	 	//i.print();
+
+		//System.out.print("Result -> ");
+	 	//result.print();
+
+	 	return new ModMethodReturn(result, i);
+	}
+
+	private int compareTo(HeftyInteger other)
+	{
+	 	//System.out.println("Comparing");
+	 	//System.out.print("this -> ");
+	 	//print();
+	 	//System.out.print("other -> ");
+	 	//other.print();
+
+	 	// If only one of HI is negative
+	 	if (isNegative() ^ other.isNegative())
+	 	{
+	 		if (isNegative())
+	 			return -1;
+	 		else
+	 			return 1;
+	 	}
+
+		byte[] a, b;
+		boolean swapped = false;
+
+	 	// If operands are of different sizes, put larger first ...
+		if (val.length < other.length()) {
+			a = other.getVal();
+			b = val;
+			swapped = true;
+		}
+		else {
+			a = val;
+			b = other.getVal();
+		}
+
+		// ... and normalize size for convenience
+		if (b.length < a.length) {
+			int diff = a.length - b.length;
+
+			byte pad = (byte) 0;
+			if (b[0] < 0) {
+				pad = (byte) 0xFF;
+			}
+
+			byte[] newb = new byte[a.length];
+			for (int i = 0; i < diff; i++) {
+				newb[i] = pad;
+			}
+
+			for (int i = 0; i < b.length; i++) {
+				newb[i + diff] = b[i];
+			}
+
+			b = newb;
+		}
+
+		if (swapped)
+		{
+			byte[] temp = a;
+			a = b;
+			b = temp;
+		}
+
+	 	// Same sign and same length
+	 	for (int i=0; i<a.length; i++)
+	 	{
+	 		int a1 = Byte.toUnsignedInt(a[i]);
+	 		int b1 = Byte.toUnsignedInt(b[i]);
+
+	 		//System.out.println(a1);
+	 		//System.out.println(b1);
+
+	 		if (a1 > b1)
+	 			return 1;
+	 		if (a1 < b1)
+	 			return -1;
+	 	}
+	 	return 0;
+	}
+
+	private boolean isZero()
+	{
+		for (int i=0; i<val.length; i++)
+		{
+			if (val[i] != 0)
+				return false;
+		}
+		return true;
+	}
+
+	public void print()
+	{
+	 	System.out.print("HeftyInteger: ");
 	 	for (int i=0; i<val.length; i++)
 	 	{
 	 		System.out.print(val[i]+" ");
 	 	}
 	 	System.out.println();
-	 }
+	}
+
+	private class ModMethodReturn
+	{
+		protected HeftyInteger mod;
+		protected HeftyInteger numOfIterations;
+
+		public ModMethodReturn(HeftyInteger m, HeftyInteger i)
+		{
+			mod = m;
+			numOfIterations = i;
+		}
+	}
 }

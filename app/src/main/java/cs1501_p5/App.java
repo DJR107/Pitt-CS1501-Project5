@@ -10,8 +10,8 @@ public class App
 {
 	public static void main(String[] args) 
 	{
-		BigInteger biA = new BigInteger("-183483599872");
-		BigInteger biB = new BigInteger("584969879856");
+		BigInteger biA = new BigInteger("11760");
+		BigInteger biB = new BigInteger("22053");
 
 		HeftyInteger hiA = new HeftyInteger(biA.toByteArray());
 		HeftyInteger hiB = new HeftyInteger(biB.toByteArray());
@@ -19,10 +19,15 @@ public class App
 		hiA.print();
 		hiB.print();
 
-		BigInteger biRes = biA.multiply(biB);
-		HeftyInteger hiRes = hiA.multiply(hiB);
+		HeftyInteger[] hiRes = hiA.XGCD(hiB);
+		BigInteger x = new BigInteger(hiRes[1].getVal());
+		BigInteger y = new BigInteger(hiRes[2].getVal());
 
-		byte[] arr = biRes.toByteArray();
+		BigInteger biGCD = biA.gcd(biB);
+
+		BigInteger biCheck = biA.multiply(x).add(biB.multiply(y));
+
+		byte[] arr = biGCD.toByteArray();
 		System.out.print("BigInteger: ");
 		for (int i=0; i<arr.length; i++)
 	 	{
@@ -30,9 +35,14 @@ public class App
 	 	}
 	 	System.out.println();
 
-	 	hiRes.print();
+	 	System.out.print("Mod -> ");
+	 	hiRes[0].print();
+	 	System.out.print("X -> ");
+		hiRes[1].print();
+		System.out.print("Y -> ");
+		hiRes[2].print();
 
-		if (biRes.compareTo(new BigInteger(hiRes.getVal())) == 0)
+		if (biGCD.compareTo(new BigInteger(hiRes[0].getVal())) == 0 && biGCD.compareTo(biCheck) == 0)
 			System.out.println("YESSSSSSS");
 		else
 			System.out.println("Fuck");
