@@ -406,7 +406,7 @@ public class HeftyInteger {
 			arr = XGCDrecHelp(other, this, arr);
 			HeftyInteger temp = arr[1];
 			arr[1] = arr[2];
-			arr[2] = temp;.
+			arr[2] = temp;
 		}
 		else 
 			arr = XGCDrecHelp(this, other, arr);
