@@ -1,8 +1,7 @@
 /**
  * HeftyInteger for CS1501 Project 5
- * @author	Dr. Farnan
+ * @author	David Roberts
  */
-
 package cs1501_p5;
 
 import java.util.Random;
@@ -217,6 +216,13 @@ public class HeftyInteger {
 		return result.shrink();
 	}
 
+	/**
+	 * Recursive function to aid in multiplication
+	 * @param x HeftyInteger to multiply (this to start)
+	 * @param y HeftyInteger to multiply (other to start)
+	 *
+	 * @return new HeftyInteger that is the result
+	 */ 
 	private HeftyInteger recMultHelp(byte[] x, byte[] y)
 	{
 		byte[] a, b;
@@ -321,6 +327,13 @@ public class HeftyInteger {
 		}
 	}
 
+	/**
+	 * Method that does the actual multiplication of two bytes
+	 * @param a byte number 1
+	 * @param b byte number 2
+	 *
+	 * @return new HeftryInteger that is the result
+	 */
 	private HeftyInteger multiply(byte a, byte b)
 	{
 		byte[] newBs = new byte[2];
@@ -329,12 +342,12 @@ public class HeftyInteger {
 
 		if (carry > ((1 << 15) - 1))
 		{
-			System.out.println("Overflow");
+			//System.out.println("Overflow");
 			newBs = new byte[3];
 		}
 		else if (carry < (-(1 << 15)))
 		{
-			System.out.println("Overflow");
+			//System.out.println("Overflow");
 			newBs = new byte[3];
 		}
 			
@@ -351,7 +364,12 @@ public class HeftyInteger {
 		return newHI;
 	}
 
-	// Shift left two for 2^2 (bytes) or one for 2^1 (bytes)
+	/**
+	 * Shifts a HeftyInteger left n bytes, puts 0's in space behind shift
+	 * @param n number of bytes to shift left
+	 *
+	 * @return new HeftyInteger shifted left n bytes
+	 */
 	private HeftyInteger shiftLeft(int n)
 	{
 		byte[] newBs = new byte[val.length+n];
@@ -364,6 +382,9 @@ public class HeftyInteger {
 		return new HeftyInteger(newBs);
 	}
 
+	/**
+	 * @return new HeftyInteger with all unnecessary leading bytes removed
+	 */
 	private HeftyInteger shrink()
 	{
 		int index=0;
@@ -417,6 +438,14 @@ public class HeftyInteger {
 		return arr;
 	}
 
+	/**
+	 * Recursive method to aid in XGCD
+	 * @param x One HeftyInteger in XGCD
+	 * @param y Another HeftyInteger in XGCD
+	 * @param arr Array of GCD, x, and y
+	 *
+	 * @return arr with all necessary info
+	 */
 	private HeftyInteger[] XGCDrecHelp(HeftyInteger a, HeftyInteger b, HeftyInteger[] arr)
 	{
 		HeftyInteger modResult;
@@ -447,12 +476,27 @@ public class HeftyInteger {
 		return arr;
 	}
 
+	/**
+	 * Finds the mod of x and y (x % y)
+	 * @param x One HeftyInteger
+	 * @param y HeftyInteger that is subtracted from x to get a remainder
+	 *
+	 * @return new ModMethodReturn class which includes remainder and # of iterations to that rem
+	 * (ModMethodReturn class at bottom)
+	 */
 	private ModMethodReturn mod(HeftyInteger x, HeftyInteger y)
 	{
 		//System.out.print("X -> ");
 	 	//x.print();
 	 	//System.out.print("Y -> ");
 	 	//y.print();
+		int difInLength = Math.abs(x.length()-y.length());
+		//System.out.println("Difference in Length in mod: "+difInLength);
+	 	if (difInLength > 3)
+		{
+			System.out.println("This gon take too long");
+			return modForBigDif(x, y, y.shiftLeft(difInLength-1));
+		}
 
 	 	HeftyInteger result = new HeftyInteger(x.getVal());
 	 	HeftyInteger i = new HeftyInteger(ZERO);
@@ -470,6 +514,76 @@ public class HeftyInteger {
 	 	return new ModMethodReturn(result, i);
 	}
 
+	/**
+	 * Finds the mod of x and y (x % y) when y would be much smaller than x and would
+	 * require and very large amount of time to subtract repeatedly from x.
+	 * This functions scales y up to closely match x's length so an efficient mod can be done
+	 * @param x One HeftyInteger
+	 * @param y HeftyInteger that is subtracted from x to get a remainder
+	 * @param expandedY new HeftyInteger that is y shifted left some bytes
+	 *
+	 * @return new ModMethodReturn class which includes remainder and # of iterations to that rem
+	 * (ModMethodReturn class at bottom)
+	 */
+	private ModMethodReturn modForBigDif(HeftyInteger x, HeftyInteger y, HeftyInteger expandedY)
+	{
+		//System.out.print("expandedY -> ");
+		//expandedY.print();
+
+		HeftyInteger result = new HeftyInteger(x.getVal());
+	 	HeftyInteger i = new HeftyInteger(ZERO);
+	 	while (result.compareTo(expandedY) >= 0)
+	 	{
+	 		result = result.add(expandedY.negate());
+	 		i = i.add(new HeftyInteger(ONE));
+
+	 		if (result.compareTo(expandedY) < 0 && result.compareTo(y) > 0)
+	 		{
+	 			expandedY = expandedY.shiftRight(1);
+	 			//System.out.print("new expandedY -> ");
+				//expandedY.print();
+	 			i = i.shiftLeft(1);
+	 			//System.out.print("new i -> ");
+				//i.print();
+	 		}
+	 	}
+
+	 	result = result.shrink();
+	 	//System.out.println("Returning");
+	 	//System.out.print("result -> ");
+	 	//result.print();
+	 	//System.out.print("i -> ");
+	 	//i.print();
+	 	//System.out.println();
+	 	return new ModMethodReturn(result, i);
+	}
+
+	/**
+	 * Shifts a HeftyInteger right n bytes
+	 * @param n number of bytes to shift right
+	 *
+	 * @return new HeftyInteger shifted right n bytes
+	 */
+	private HeftyInteger shiftRight(int n)
+	{
+		byte[] newBs = new byte[val.length-n];
+
+		for (int i=0; i<newBs.length; i++)
+		{
+			newBs[i] = val[i];
+		}
+
+		return new HeftyInteger(newBs);
+	}
+
+	/**
+	 * A comparison method of this and other
+	 * @param other HeftyInteger of interest
+	 *
+	 * @return 1 if this > other
+	 * @return -1 if other > this
+	 * @return 0 if this == other
+	 */
 	private int compareTo(HeftyInteger other)
 	{
 	 	//System.out.println("Comparing");
@@ -546,6 +660,9 @@ public class HeftyInteger {
 	 	return 0;
 	}
 
+	/**
+	 * @return true is this HeftyInteger is zero
+	 */
 	private boolean isZero()
 	{
 		for (int i=0; i<val.length; i++)
@@ -566,6 +683,11 @@ public class HeftyInteger {
 	 	System.out.println();
 	}
 
+	/**
+	 * Special return from mod methods that includes mod and number of iterations
+	 * that was required to get that remainder
+	 * Both values helpful in calculating X and Y in XGCD
+	 */
 	private class ModMethodReturn
 	{
 		protected HeftyInteger mod;

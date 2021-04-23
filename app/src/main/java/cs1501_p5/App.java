@@ -10,8 +10,8 @@ public class App
 {
 	public static void main(String[] args) 
 	{
-		BigInteger biA = new BigInteger("11760");
-		BigInteger biB = new BigInteger("22053");
+		BigInteger biA = new BigInteger("28752398052908590823590823590827390587209853723");
+		BigInteger biB = new BigInteger("982739084652073650274690216490823590847259872985728753075390287352908375");
 
 		HeftyInteger hiA = new HeftyInteger(biA.toByteArray());
 		HeftyInteger hiB = new HeftyInteger(biB.toByteArray());
